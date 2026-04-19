@@ -1,0 +1,31 @@
+{
+  "expo": {
+    "name": "TopSeller AI",
+    "slug": "topseller-ai",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "scheme": "topsellerai",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.topseller.ai"
+    },
+    "android": {
+      "package": "com.topseller.ai"
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "TopSeller AI needs photo access so you can edit product images.",
+          "cameraPermission": "TopSeller AI needs camera access so you can take product photos."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "replace-with-your-eas-project-id"
+      }
+    }
+  }
+}
