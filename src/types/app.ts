@@ -16,3 +16,5 @@ export type EditorHookOptions = {
   backgrounds: BackgroundOption[];
   templates: PromoTemplate[];
 };
+
+export const FREE_DAILY_LIMIT = 5;

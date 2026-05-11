@@ -2,15 +2,18 @@ import { useEffect, useState } from "react";
 import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
 import { removeBackground as removeBackgroundNative } from "@six33/react-native-bg-removal";
 
-import type { EditorHookOptions } from "../types/app";
+import type { BackgroundOption, EditorHookOptions, PromoTemplate } from "../types/app";
 import { generateThaiCaption } from "../services/gemini";
 import { configureRevenueCat } from "../services/revenueCat";
 
 export const useEditor = ({ backgrounds, templates }: EditorHookOptions) => {
+  const defaultBackground = backgrounds[0] as BackgroundOption;
+  const defaultTemplate = templates[0] as PromoTemplate;
+
   const [originalImageUri, setOriginalImageUri] = useState<string | null>(null);
   const [previewImageUri, setPreviewImageUri] = useState<string | null>(null);
-  const [selectedBackgroundId, setSelectedBackgroundId] = useState(backgrounds[0]?.id ?? "");
-  const [selectedTemplateId, setSelectedTemplateId] = useState(templates[0]?.id ?? "");
+  const [selectedBackgroundId, setSelectedBackgroundId] = useState(defaultBackground.id);
+  const [selectedTemplateId, setSelectedTemplateId] = useState(defaultTemplate.id);
   const [caption, setCaption] = useState("");
   const [error, setError] = useState("");
   const [isRemovingBackground, setIsRemovingBackground] = useState(false);
@@ -20,16 +23,13 @@ export const useEditor = ({ backgrounds, templates }: EditorHookOptions) => {
     void configureRevenueCat();
   }, []);
 
-  const selectedBackground =
-    backgrounds.find((background) => background.id === selectedBackgroundId) ?? backgrounds[0];
-  const selectedTemplate =
-    templates.find((template) => template.id === selectedTemplateId) ?? templates[0];
+  const selectedBackground: BackgroundOption =
+    backgrounds.find((b) => b.id === selectedBackgroundId) ?? defaultBackground;
+  const selectedTemplate: PromoTemplate =
+    templates.find((t) => t.id === selectedTemplateId) ?? defaultTemplate;
 
   const pickImage = async (uri: string | null) => {
-    if (!uri) {
-      return;
-    }
-
+    if (!uri) return;
     setError("");
     setCaption("");
     setOriginalImageUri(uri);
@@ -37,10 +37,7 @@ export const useEditor = ({ backgrounds, templates }: EditorHookOptions) => {
   };
 
   const removeBackground = async () => {
-    if (!originalImageUri) {
-      return;
-    }
-
+    if (!originalImageUri) return;
     try {
       setError("");
       setIsRemovingBackground(true);
@@ -50,26 +47,21 @@ export const useEditor = ({ backgrounds, templates }: EditorHookOptions) => {
         format: SaveFormat.PNG
       });
       setPreviewImageUri(normalized.uri);
-    } catch (removeError) {
-      setError(
-        "ตัดพื้นหลังไม่สำเร็จบนเครื่องนี้ อาจเป็นเพราะรุ่น iOS/Android ยังไม่รองรับ native removal หรือยังต้องตั้งค่า API fallback เพิ่ม"
-      );
+    } catch {
+      setError("ตัดพื้นหลังไม่สำเร็จบนเครื่องนี้ อาจเป็นเพราะรุ่น iOS/Android ยังไม่รองรับ");
     } finally {
       setIsRemovingBackground(false);
     }
   };
 
   const generateCaption = async () => {
-    if (!previewImageUri) {
-      return;
-    }
-
+    if (!previewImageUri) return;
     try {
       setError("");
       setIsCaptionLoading(true);
       const nextCaption = await generateThaiCaption(selectedTemplate);
       setCaption(nextCaption);
-    } catch (captionError) {
+    } catch {
       setError("สร้าง caption ไม่สำเร็จ ลองเช็ก Gemini API key และอินเทอร์เน็ตอีกครั้งครับ");
     } finally {
       setIsCaptionLoading(false);
@@ -77,10 +69,7 @@ export const useEditor = ({ backgrounds, templates }: EditorHookOptions) => {
   };
 
   const resetEditor = () => {
-    if (!originalImageUri) {
-      return;
-    }
-
+    if (!originalImageUri) return;
     setPreviewImageUri(originalImageUri);
     setCaption("");
     setError("");
