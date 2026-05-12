@@ -1,10 +1,11 @@
 import type { PromoTemplate } from "../types/app";
 import { env } from "../config/env";
+import { withRetry } from "../utils/retry";
 
 const GEMINI_ENDPOINT =
   "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
-export const generateThaiCaption = async (template: PromoTemplate) => {
+export const generateThaiCaption = async (template: PromoTemplate): Promise<string> => {
   if (!env.geminiApiKey) {
     return [
       `${template.title} ${template.discount} พร้อมส่ง เน้นภาพสวย ดูแพง แต่ลงขายได้ไว`,
@@ -26,30 +27,23 @@ export const generateThaiCaption = async (template: PromoTemplate) => {
     "- ปิดท้ายด้วย hashtag ไทย/อีคอมเมิร์ซ 3-5 อัน"
   ].join("\n");
 
-  const response = await fetch(GEMINI_ENDPOINT, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-goog-api-key": env.geminiApiKey
-    },
-    body: JSON.stringify({
-      contents: [
-        {
-          parts: [{ text: prompt }]
-        }
-      ]
-    })
+  return withRetry(async () => {
+    const response = await fetch(GEMINI_ENDPOINT, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": env.geminiApiKey!
+      },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Gemini API error ${response.status}`);
+    }
+
+    const data = await response.json();
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) throw new Error("Gemini API returned no caption");
+    return text.trim() as string;
   });
-
-  if (!response.ok) {
-    throw new Error("Gemini API request failed");
-  }
-
-  const data = await response.json();
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) {
-    throw new Error("Gemini API returned no caption");
-  }
-
-  return text.trim();
 };
